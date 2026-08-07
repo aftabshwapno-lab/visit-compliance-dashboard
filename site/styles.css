@@ -81,7 +81,6 @@ tbody tr:hover { background: #ccebf5; }
 .officer-link:hover, .officer-link:focus-visible { color: #002f49; }
 .officer-link:focus-visible { outline: 2px solid #2b83a6; outline-offset: 2px; border-radius: 2px; }
 #performance-table tbody tr.selected-row td { background: #b9e3ef; }
-.completion-cell { font-weight: 800; }
 .details-section { margin-top: 7px; background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow); }
 .details-message { padding: 9px; font-size: 12px; font-weight: 700; color: #385d6c; }
 .details-title { padding: 8px 10px; font-size: 12px; font-weight: 800; color: #244e61; border-bottom: 1px solid #c1d8e0; }
@@ -347,10 +346,6 @@ tbody tr:hover {
   background: #183346 !important;
   color: #ffffff !important;
 }
-.completion-cell {
-  color: #8bd4f6 !important;
-}
-
 /* Officer links */
 .officer-link {
   color: #67c1eb !important;
@@ -453,7 +448,5 @@ input,
 
 /* v8.1 — Completion % column uses the same color as all other table columns */
 #performance-table .completion-cell,
-#performance-table td.completion-cell {
-  color: #edf3f6 !important;
-  font-weight: inherit !important;
-}
+#performance-table td
+/* v8.2 — Completion % has no conditional formatting; it renders as a normal table cell. */

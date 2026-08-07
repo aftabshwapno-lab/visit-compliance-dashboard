@@ -11,26 +11,18 @@ const columns = [
   ["neverVisitedOutlets", "Never Visited Outlets (Till Date)"],
   ["completionPct", "Completion %"]
 ];
-const state = { data: null, status: "All statuses", officer: "All officers", search: "", sortKey: "status", sortDir: 1, activeDetailTab: "planned" };
+const ALL_OFFICERS = "__ALL_OFFICERS__";
+const state = { data: null, status: "All statuses", officerKey: ALL_OFFICERS, search: "", sortKey: "status", sortDir: 1, activeDetailTab: "planned" };
 const $ = id => document.getElementById(id);
 const numberFmt = new Intl.NumberFormat("en-US");
 function fmtDate(iso) { return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric", timeZone:"UTC" }); }
 function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 function pct(v) { return v == null || Number.isNaN(Number(v)) ? "—" : `${Number(v).toFixed(1)}%`; }
-function completionStyle(v) {
-  if (v == null) return "";
-  const n = Number(v);
-  if (n >= 80) return "background:#8fdb76;color:#133a18";
-  if (n >= 60) return "background:#c4e68d;color:#294111";
-  if (n >= 40) return "background:#f0e77a;color:#544c09";
-  if (n >= 20) return "background:#f6bd72;color:#5d3510";
-  return "background:#ef8d72;color:#5f1f12";
-}
 function getFiltered() {
   const q = state.search.trim().toLowerCase();
   return state.data.officers.filter(r => {
     if (state.status !== "All statuses" && r.status !== state.status) return false;
-    if (state.officer !== "All officers" && r.officer !== state.officer) return false;
+    if (state.officerKey !== ALL_OFFICERS && r.officerKey !== state.officerKey) return false;
     if (q && !r.officer.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -45,11 +37,34 @@ function sortedRows(rows) {
   });
 }
 function updateOfficerOptions() {
-  const previous = state.officer;
-  const source = state.data.officers.filter(r => state.status === "All statuses" || r.status === state.status);
-  const names = [...new Set(source.map(r => r.officer))].sort((a,b)=>a.localeCompare(b));
-  $("officer-filter").innerHTML = ["All officers", ...names].map(v => `<option>${esc(v)}</option>`).join("");
-  if (names.includes(previous)) $("officer-filter").value = previous; else { state.officer = "All officers"; $("officer-filter").value = state.officer; }
+  const previous = state.officerKey;
+  const source = state.data.officers
+    .filter(r => state.status === "All statuses" || r.status === state.status)
+    .sort((a,b) => a.officer.localeCompare(b.officer, undefined, { sensitivity:"base" }) || a.status.localeCompare(b.status));
+  const nameCounts = new Map();
+  source.forEach(r => nameCounts.set(r.officer, (nameCounts.get(r.officer) || 0) + 1));
+  const options = [`<option value="${ALL_OFFICERS}">All officers</option>`].concat(source.map(r => {
+    const label = nameCounts.get(r.officer) > 1 ? `${r.status} — ${r.officer}` : r.officer;
+    return `<option value="${esc(r.officerKey)}">${esc(label)}</option>`;
+  }));
+  $("officer-filter").innerHTML = options.join("");
+  if (source.some(r => r.officerKey === previous)) {
+    $("officer-filter").value = previous;
+  } else {
+    state.officerKey = ALL_OFFICERS;
+    $("officer-filter").value = ALL_OFFICERS;
+  }
+}
+function scrollToDetails() {
+  requestAnimationFrame(() => $("details-section")?.scrollIntoView({ behavior:"smooth", block:"start" }));
+}
+function selectOfficer(officerKey, scroll = true) {
+  state.officerKey = officerKey || ALL_OFFICERS;
+  state.activeDetailTab = "planned";
+  updateOfficerOptions();
+  $("officer-filter").value = state.officerKey;
+  render();
+  if (scroll && state.officerKey !== ALL_OFFICERS) scrollToDetails();
 }
 function renderHeader() {
   const m = state.data.metadata;
@@ -85,30 +100,70 @@ function renderTable(rows) {
     const key=th.dataset.key; if (state.sortKey===key) state.sortDir*=-1; else { state.sortKey=key; state.sortDir=1; } render();
   }));
   const sorted = sortedRows(rows);
-  $("performance-body").innerHTML = sorted.map(r => `<tr>${columns.map(([key]) => {
+  $("performance-body").innerHTML = sorted.map(r => `<tr class="${state.officerKey===r.officerKey?"selected-row":""}">${columns.map(([key]) => {
     const val=r[key];
-    if (key==="completionPct") return `<td class="completion-cell" style="${completionStyle(val)}">${pct(val)}</td>`;
+    if (key==="officer") return `<td class="officer-cell"><button type="button" class="officer-link" data-officer-key="${esc(r.officerKey)}" title="Show outlet details for ${esc(r.officer)}">${esc(val)}</button></td>`;
+    if (key==="completionPct") return `<td>${pct(val)}</td>`;
     if (typeof val === "number") return `<td>${numberFmt.format(val)}</td>`;
     return `<td>${esc(val)}</td>`;
   }).join("")}</tr>`).join("");
+  $("performance-body").querySelectorAll(".officer-link").forEach(btn => btn.addEventListener("click", () => {
+    selectOfficer(btn.dataset.officerKey, true);
+  }));
   const total = key => rows.reduce((t,r)=>t+(Number(r[key])||0),0);
   $("summary-caption").textContent = `${rows.length} displayed rows · ${numberFmt.format(total("totalPlannedFullMonth"))} planned visits full month · ${numberFmt.format(total("totalPlannedTillDate"))} planned visits till date · ${numberFmt.format(total("remainingVisits"))} remaining with no response · ${numberFmt.format(total("neverVisitedOutlets"))} never visited outlets`;
 }
 function detailTable(rows, type) {
   if (!rows.length) return `<div class="details-message">No records in this section.</div>`;
-  const cols = type === "never" ? [["siteCode","Outlet Code"],["outletName","Outlet Name"]] : [["plannedDate","Planned Date"],["siteCode","Outlet Code"],["outletName","Outlet Name"]];
-  return `<div class="detail-table-wrap"><table class="detail-table"><thead><tr>${cols.map(c=>`<th>${c[1]}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(([k])=>`<td>${k==="plannedDate"?fmtDate(r[k]):esc(r[k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+
+  let cols;
+  if (type === "never") {
+    cols = [["siteCode","Outlet Code"],["outletName","Outlet Name"]];
+  } else if (type === "plannedResponses" || type === "unplannedResponses") {
+    cols = [["responseDate","Response Date"],["siteCode","Outlet Code"],["outletName","Outlet Name"],["responseId","Response ID"]];
+  } else {
+    cols = [["plannedDate","Planned Date"],["siteCode","Outlet Code"],["outletName","Outlet Name"]];
+  }
+
+  const dateKeys = new Set(["plannedDate","responseDate"]);
+  return `<div class="detail-table-wrap"><table class="detail-table detail-table-${type}"><thead><tr>${cols.map(c=>`<th>${c[1]}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(([k])=>`<td>${dateKeys.has(k)&&r[k]?fmtDate(r[k]):esc(r[k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 function renderDetails(rows) {
   const target=$("details-section");
-  if (rows.length!==1) { target.innerHTML=`<div class="details-message"><strong>Officer outlet details:</strong> Select an officer, or search until only one officer remains, to see planned outlets, remaining outlet/date assignments, and distinct outlets never visited through the snapshot.</div>`; return; }
-  const row=rows[0], d=state.data.details[row.officerKey] || {planned:[],remaining:[],neverVisited:[]};
+  if (rows.length!==1) {
+    target.innerHTML=`<div class="details-message"><strong>Officer outlet details:</strong> Select an officer, or search until only one officer remains, to see planned outlets, remaining visits, never-visited outlets, planned-date response rows, and other/unplanned response rows through the snapshot.</div>`;
+    return;
+  }
+
+  const row=rows[0];
+  const d=state.data.details[row.officerKey] || {
+    planned:[],
+    remaining:[],
+    neverVisited:[],
+    plannedDateResponseList:[],
+    otherUnplannedResponseList:[]
+  };
+
+  const plannedResponses = d.plannedDateResponseList || [];
+  const unplannedResponses = d.otherUnplannedResponseList || [];
+
   const tabs=[
     ["planned",`Planned outlets (${d.planned.length})`],
     ["remaining",`Remaining visits (${d.remaining.length})`],
-    ["never",`Never visited outlets (${d.neverVisited.length})`]
+    ["never",`Never visited outlets (${d.neverVisited.length})`],
+    ["plannedResponses",`Planned-date response list (${plannedResponses.length})`],
+    ["unplannedResponses",`Other / unplanned response list (${unplannedResponses.length})`]
   ];
-  const tabRows = state.activeDetailTab==="planned" ? d.planned : state.activeDetailTab==="remaining" ? d.remaining : d.neverVisited;
+
+  const tabMap = {
+    planned: d.planned,
+    remaining: d.remaining,
+    never: d.neverVisited,
+    plannedResponses,
+    unplannedResponses
+  };
+  const tabRows = tabMap[state.activeDetailTab] || d.planned;
+
   target.innerHTML=`<div class="details-title">Officer outlet details — ${esc(row.status)} · ${esc(row.officer)}</div><div class="tabs">${tabs.map(([k,l])=>`<button class="tab-btn ${state.activeDetailTab===k?"active":""}" data-tab="${k}">${l}</button>`).join("")}</div><div id="detail-content">${detailTable(tabRows,state.activeDetailTab)}</div>`;
   target.querySelectorAll(".tab-btn").forEach(b=>b.addEventListener("click",()=>{state.activeDetailTab=b.dataset.tab;renderDetails(rows);}));
 }
@@ -138,9 +193,9 @@ async function init() {
     state.data=await res.json();
     renderHeader(); renderDefinitions(); render();
     $("status-filter").addEventListener("change",e=>{state.status=e.target.value;updateOfficerOptions();render();});
-    $("officer-filter").addEventListener("change",e=>{state.officer=e.target.value;render();});
+    $("officer-filter").addEventListener("change",e=>selectOfficer(e.target.value, true));
     $("officer-search").addEventListener("input",e=>{state.search=e.target.value;render();});
-    $("reset-btn").addEventListener("click",()=>{state.status="All statuses";state.officer="All officers";state.search="";$("status-filter").value=state.status;$("officer-search").value="";updateOfficerOptions();render();});
+    $("reset-btn").addEventListener("click",()=>{state.status="All statuses";state.officerKey=ALL_OFFICERS;state.search="";state.activeDetailTab="planned";$("status-filter").value=state.status;$("officer-search").value="";updateOfficerOptions();render();});
     $("download-btn").addEventListener("click",downloadCsv);
   } catch(err) {
     document.querySelector("main").innerHTML=`<div class="error-box"><strong>Dashboard could not load.</strong>\n${esc(err.message)}\n\nIf this is a new GitHub repository, open the Actions tab and confirm the Deploy Visit Compliance Dashboard workflow completed successfully.</div>`;
