@@ -38,8 +38,8 @@ select:focus, input:focus { border-color: #2b83a6; box-shadow: 0 0 0 2px rgba(43
 .table-wrap { overflow-x: hidden; overflow-y: auto; max-height: 72vh; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10px; }
 #performance-table { width: 100%; min-width: 0; table-layout: fixed; }
-#performance-table th, #performance-table td { padding: 4px 2px; font-size: clamp(9.5px, .66vw, 11.5px); }
-#performance-table th { white-space: normal; overflow-wrap: anywhere; font-weight: 700; line-height: 1.12; }
+#performance-table th, #performance-table td { padding: 4px 1px; font-size: 12px; }
+#performance-table th { white-space: normal; overflow-wrap: anywhere; font-weight: 700; line-height: 1.08; }
 #performance-table td { overflow: hidden; text-overflow: ellipsis; }
 #performance-table th:nth-child(1), #performance-table td:nth-child(1) { width: 5.5%; }
 #performance-table th:nth-child(2), #performance-table td:nth-child(2) { width: 19%; }
@@ -52,7 +52,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10
 #performance-table th:nth-child(9), #performance-table td:nth-child(9) { width: 8%; }
 #performance-table th:nth-child(10), #performance-table td:nth-child(10) { width: 10%; }
 #performance-table th:nth-child(11), #performance-table td:nth-child(11) { width: 7.5%; }
-#performance-table td:nth-child(2) { white-space: normal; line-height: 1.18; }
+#performance-table td:nth-child(2) { white-space: normal; line-height: 1.12; }
 th { position: sticky; top: 0; z-index: 2; background: #0d5679; color: #fff; padding: 7px 6px; border-right: 1px solid rgba(255,255,255,.22); border-bottom: 1px solid #0a4562; text-align: center; vertical-align: middle; line-height: 1.13; cursor: pointer; user-select: none; }
 th .sort { opacity: .82; margin-left: 3px; font-size: 9px; }
 td { padding: 5px 6px; border-right: 1px solid #b6d6e0; border-bottom: 1px solid #b6d6e0; text-align: center; white-space: nowrap; }
