@@ -18,15 +18,6 @@ const numberFmt = new Intl.NumberFormat("en-US");
 function fmtDate(iso) { return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric", timeZone:"UTC" }); }
 function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 function pct(v) { return v == null || Number.isNaN(Number(v)) ? "—" : `${Number(v).toFixed(1)}%`; }
-function completionStyle(v) {
-  if (v == null) return "";
-  const n = Number(v);
-  if (n >= 80) return "background:#8fdb76;color:#133a18";
-  if (n >= 60) return "background:#c4e68d;color:#294111";
-  if (n >= 40) return "background:#f0e77a;color:#544c09";
-  if (n >= 20) return "background:#f6bd72;color:#5d3510";
-  return "background:#ef8d72;color:#5f1f12";
-}
 function getFiltered() {
   const q = state.search.trim().toLowerCase();
   return state.data.officers.filter(r => {
@@ -112,7 +103,7 @@ function renderTable(rows) {
   $("performance-body").innerHTML = sorted.map(r => `<tr class="${state.officerKey===r.officerKey?"selected-row":""}">${columns.map(([key]) => {
     const val=r[key];
     if (key==="officer") return `<td class="officer-cell"><button type="button" class="officer-link" data-officer-key="${esc(r.officerKey)}" title="Show outlet details for ${esc(r.officer)}">${esc(val)}</button></td>`;
-    if (key==="completionPct") return `<td class="completion-cell" style="${completionStyle(val)}">${pct(val)}</td>`;
+    if (key==="completionPct") return `<td>${pct(val)}</td>`;
     if (typeof val === "number") return `<td>${numberFmt.format(val)}</td>`;
     return `<td>${esc(val)}</td>`;
   }).join("")}</tr>`).join("");
