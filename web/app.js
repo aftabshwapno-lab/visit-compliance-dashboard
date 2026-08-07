@@ -124,19 +124,55 @@ function renderTable(rows) {
 }
 function detailTable(rows, type) {
   if (!rows.length) return `<div class="details-message">No records in this section.</div>`;
-  const cols = type === "never" ? [["siteCode","Outlet Code"],["outletName","Outlet Name"]] : [["plannedDate","Planned Date"],["siteCode","Outlet Code"],["outletName","Outlet Name"]];
-  return `<div class="detail-table-wrap"><table class="detail-table"><thead><tr>${cols.map(c=>`<th>${c[1]}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(([k])=>`<td>${k==="plannedDate"?fmtDate(r[k]):esc(r[k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+
+  let cols;
+  if (type === "never") {
+    cols = [["siteCode","Outlet Code"],["outletName","Outlet Name"]];
+  } else if (type === "plannedResponses" || type === "unplannedResponses") {
+    cols = [["responseDate","Response Date"],["siteCode","Outlet Code"],["outletName","Outlet Name"],["responseId","Response ID"]];
+  } else {
+    cols = [["plannedDate","Planned Date"],["siteCode","Outlet Code"],["outletName","Outlet Name"]];
+  }
+
+  const dateKeys = new Set(["plannedDate","responseDate"]);
+  return `<div class="detail-table-wrap"><table class="detail-table detail-table-${type}"><thead><tr>${cols.map(c=>`<th>${c[1]}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(([k])=>`<td>${dateKeys.has(k)&&r[k]?fmtDate(r[k]):esc(r[k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 function renderDetails(rows) {
   const target=$("details-section");
-  if (rows.length!==1) { target.innerHTML=`<div class="details-message"><strong>Officer outlet details:</strong> Select an officer, or search until only one officer remains, to see planned outlets, remaining outlet/date assignments, and distinct outlets never visited through the snapshot.</div>`; return; }
-  const row=rows[0], d=state.data.details[row.officerKey] || {planned:[],remaining:[],neverVisited:[]};
+  if (rows.length!==1) {
+    target.innerHTML=`<div class="details-message"><strong>Officer outlet details:</strong> Select an officer, or search until only one officer remains, to see planned outlets, remaining visits, never-visited outlets, planned-date response rows, and other/unplanned response rows through the snapshot.</div>`;
+    return;
+  }
+
+  const row=rows[0];
+  const d=state.data.details[row.officerKey] || {
+    planned:[],
+    remaining:[],
+    neverVisited:[],
+    plannedDateResponseList:[],
+    otherUnplannedResponseList:[]
+  };
+
+  const plannedResponses = d.plannedDateResponseList || [];
+  const unplannedResponses = d.otherUnplannedResponseList || [];
+
   const tabs=[
     ["planned",`Planned outlets (${d.planned.length})`],
     ["remaining",`Remaining visits (${d.remaining.length})`],
-    ["never",`Never visited outlets (${d.neverVisited.length})`]
+    ["never",`Never visited outlets (${d.neverVisited.length})`],
+    ["plannedResponses",`Planned-date response list (${plannedResponses.length})`],
+    ["unplannedResponses",`Other / unplanned response list (${unplannedResponses.length})`]
   ];
-  const tabRows = state.activeDetailTab==="planned" ? d.planned : state.activeDetailTab==="remaining" ? d.remaining : d.neverVisited;
+
+  const tabMap = {
+    planned: d.planned,
+    remaining: d.remaining,
+    never: d.neverVisited,
+    plannedResponses,
+    unplannedResponses
+  };
+  const tabRows = tabMap[state.activeDetailTab] || d.planned;
+
   target.innerHTML=`<div class="details-title">Officer outlet details — ${esc(row.status)} · ${esc(row.officer)}</div><div class="tabs">${tabs.map(([k,l])=>`<button class="tab-btn ${state.activeDetailTab===k?"active":""}" data-tab="${k}">${l}</button>`).join("")}</div><div id="detail-content">${detailTable(tabRows,state.activeDetailTab)}</div>`;
   target.querySelectorAll(".tab-btn").forEach(b=>b.addEventListener("click",()=>{state.activeDetailTab=b.dataset.tab;renderDetails(rows);}));
 }
