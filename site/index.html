@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visit Compliance Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <header class="dashboard-header">
+      <div>
+        <h1 id="page-title">Visit Compliance Dashboard</h1>
+        <div id="subtitle" class="subtitle"></div>
+      </div>
+      <div class="snapshot-block">
+        <div id="snapshot-line" class="snapshot-line"></div>
+        <div id="snapshot-note" class="snapshot-note"></div>
+      </div>
+    </header>
+
+    <section class="controls-panel">
+      <label>Status<select id="status-filter"></select></label>
+      <label>Select officer<select id="officer-filter"></select></label>
+      <label class="search-label">Search officer<input id="officer-search" type="search" placeholder="Type an officer name" /></label>
+      <div class="action-stack">
+        <button id="reset-btn" class="btn secondary">Reset filters</button>
+        <button id="download-btn" class="btn primary">Download visible CSV</button>
+      </div>
+    </section>
+
+    <section id="kpis" class="kpi-grid"></section>
+
+    <section class="table-section">
+      <div class="section-bar">
+        <h2>Officer-wise visit performance</h2>
+        <div id="summary-caption" class="section-caption"></div>
+      </div>
+      <div class="table-wrap">
+        <table id="performance-table">
+          <thead><tr id="performance-head"></tr></thead>
+          <tbody id="performance-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="details-section" class="details-section"></section>
+
+    <section class="definitions">
+      <strong>Definitions:</strong>
+      <span id="definitions-text"></span>
+    </section>
+    <footer id="source-footer"></footer>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

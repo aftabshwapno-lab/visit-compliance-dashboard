@@ -1,0 +1,13 @@
+{
+  "snapshotDateOverride": null,
+  "plannedValues": ["yes"],
+  "subtitle": "Officer-wise planned visit and audit-response performance",
+  "includeUnmappedInVisibleOfficerKpi": false,
+  "responseAcceptance": {
+    "requireResponseId": true,
+    "requireDate": true,
+    "requireSiteCode": true,
+    "requireOfficer": true,
+    "deduplicateByResponseId": true
+  }
+}
