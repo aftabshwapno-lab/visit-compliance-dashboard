@@ -435,10 +435,19 @@ def calculate(assignments: list[dict], all_responses: list[dict], officer_dimens
         if row["totalPlannedTillDate"]:
             row["completionPct"] = row["distinctPlannedVisitsCompleted"] / row["totalPlannedTillDate"] * 100
 
+    # Outlet-name lookup is derived from the schedule workbook so response lists can
+    # show outlet names without requiring any additional response-workbook headers.
+    outlet_name_by_site: dict[str, str] = {}
+    for a in assignments:
+        if a["siteCode"] and a["outletName"] and a["siteCode"] not in outlet_name_by_site:
+            outlet_name_by_site[a["siteCode"]] = a["outletName"]
+
     details: dict[str, dict] = {}
     for ok in metrics:
         full = [a for a in assignments if officer_plan_key(a) == ok]
         due_officer = [a for a in due if officer_plan_key(a) == ok]
+        officer_responses = [r for r in responses if r["officerKey"] == ok]
+
         planned = [
             {"plannedDate": a["plannedDate"], "siteCode": a["siteCode"], "outletName": a["outletName"]}
             for a in full
@@ -451,10 +460,33 @@ def calculate(assignments: list[dict], all_responses: list[dict], officer_dimens
         for a in due_officer:
             if (ok, a["siteCode"]) not in visited_pairs:
                 never_map.setdefault(a["siteCode"], {"siteCode": a["siteCode"], "outletName": a["outletName"]})
+
+        planned_date_response_list = []
+        other_unplanned_response_list = []
+        for r in officer_responses:
+            item = {
+                "responseDate": r["responseDate"],
+                "siteCode": r["siteCode"],
+                "outletName": outlet_name_by_site.get(r["siteCode"], ""),
+                "responseId": r["responseId"],
+            }
+            if response_plan_key(r) in plan_keys:
+                planned_date_response_list.append(item)
+            else:
+                other_unplanned_response_list.append(item)
+
         details[ok] = {
             "planned": sorted(planned, key=lambda x: (x["plannedDate"], x["siteCode"])),
             "remaining": sorted(remaining, key=lambda x: (x["plannedDate"], x["siteCode"])),
             "neverVisited": sorted(never_map.values(), key=lambda x: x["siteCode"]),
+            "plannedDateResponseList": sorted(
+                planned_date_response_list,
+                key=lambda x: (x["responseDate"], x["siteCode"], x["responseId"])
+            ),
+            "otherUnplannedResponseList": sorted(
+                other_unplanned_response_list,
+                key=lambda x: (x["responseDate"], x["siteCode"], x["responseId"])
+            ),
         }
 
     status_order = {"RHO": 0, "Unmapped": 1, "Zonal": 2}
