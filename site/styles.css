@@ -450,3 +450,51 @@ input,
 #performance-table .completion-cell,
 #performance-table td
 /* v8.2 — Completion % has no conditional formatting; it renders as a normal table cell. */
+
+
+/* ============================================================
+   v8.3 HARD FIX — NO CONDITIONAL BACKGROUND IN COMPLETION %
+   Completion % is column 11 / last column in performance table.
+   These !important rules also defeat stale old inline JS styles.
+   ============================================================ */
+
+#performance-table tbody td:nth-child(11),
+#performance-table tbody td:last-child,
+#performance-table tbody td.completion-cell {
+  background: #0b1015 !important;
+  background-color: #0b1015 !important;
+  color: #edf3f6 !important;
+  font-weight: inherit !important;
+}
+
+#performance-table tbody tr:nth-child(even) td:nth-child(11),
+#performance-table tbody tr:nth-child(even) td:last-child,
+#performance-table tbody tr:nth-child(even) td.completion-cell {
+  background: #10171d !important;
+  background-color: #10171d !important;
+  color: #edf3f6 !important;
+}
+
+#performance-table tbody tr:hover td:nth-child(11),
+#performance-table tbody tr:hover td:last-child,
+#performance-table tbody tr:hover td.completion-cell {
+  background: #1b2730 !important;
+  background-color: #1b2730 !important;
+  color: #edf3f6 !important;
+}
+
+#performance-table tbody tr.selected-row td:nth-child(11),
+#performance-table tbody tr.selected-row td:last-child,
+#performance-table tbody tr.selected-row td.completion-cell {
+  background: #183346 !important;
+  background-color: #183346 !important;
+  color: #ffffff !important;
+}
+
+
+/* v8.4 — Completion % column bold */
+#performance-table tbody td:nth-child(11),
+#performance-table tbody td:last-child,
+#performance-table tbody td.completion-cell {
+  font-weight: 700 !important;
+}
